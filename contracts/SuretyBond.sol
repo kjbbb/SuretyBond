@@ -62,6 +62,10 @@ contract SuretyBond {
         insurer.transfer(insurance_price);
     }
 
+    function obligeeFinish() public isObligee {
+        insurer.transfer(this.balance);
+    }
+
     function finish() public isInsurer {
         if (instantiated_at + maturation_interval > now) {
             insurer.transfer(this.balance);
