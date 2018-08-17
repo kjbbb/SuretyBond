@@ -7,7 +7,7 @@ contract SuretyBond {
     address public obligee;     //buyer receiving the goods
     address public principal;   //seller
     address public insurer;
-    uint public maturation_interval;
+    uint public seconds_to_maturation;
     uint public instantiated_at;
     
     enum Stages {
@@ -17,13 +17,13 @@ contract SuretyBond {
     
     Stages public stage = Stages.INIT;
     
-    constructor(uint _price, uint _insurance_price, address _obligee, address _principal, address _insurer, uint _maturation_interval) public {
+    constructor(uint _price, uint _insurance_price, address _obligee, address _principal, address _insurer, uint _seconds_to_maturation) public {
         price = _price;
         insurance_price = _insurance_price;
         obligee = _obligee;
         principal = _principal;
         insurer = _insurer;
-        maturation_interval = _maturation_interval;
+        seconds_to_maturation = _seconds_to_maturation;
         
         instantiated_at = now;
     }
@@ -67,7 +67,7 @@ contract SuretyBond {
     }
 
     function finish() public isInsurer {
-        if (instantiated_at + maturation_interval > now) {
+        if (instantiated_at + seconds_to_maturation > now) {
             insurer.transfer(this.balance);
         }
     }
