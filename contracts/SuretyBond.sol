@@ -10,12 +10,14 @@ contract SuretyBond {
     uint public seconds_to_maturation;
     uint public instantiated_at;
     
-    enum Stages {
+    enum States {
         INIT,
+        FUNDED,
+        BOUGHT,
         CLOSED
     }
     
-    Stages public stage = Stages.INIT;
+    States public state = States.INIT;
     
     constructor(uint _price, uint _insurance_price, address _obligee, address _principal, address _insurer, uint _seconds_to_maturation) public {
         price = _price;
@@ -42,32 +44,43 @@ contract SuretyBond {
         require(msg.sender == obligee, "obligee");
         _;
     }
+
+    modifier reqState(States s) {
+        require(state == s);
+        _;
+    }
     
-    function fund() public payable isInsurer {
+    function fund() public payable isInsurer reqState(States.INIT) {
         require(msg.value == price);
+
+        state = States.FUNDED;
     }
     
     function buyPrice() public constant returns (uint) {
         return price + insurance_price;
     }
     
-    function buy() public payable isObligee {
+    function buy() public payable isObligee reqState(States.FUNDED) {
         require(msg.value == buyPrice());
-        
+
+        state = States.BOUGHT;
         principal.transfer(price);
     }
 
-    function approveInsuranceClaim() public isInsurer {
+    function approveInsuranceClaim() public isInsurer reqState(States.BOUGHT) {
+        state = States.CLOSED;
         obligee.transfer(price);
         insurer.transfer(insurance_price);
     }
 
-    function obligeeFinish() public isObligee {
+    function obligeeFinish() public isObligee reqState(States.BOUGHT) {
+        state = States.CLOSED;
         insurer.transfer(this.balance);
     }
 
-    function finish() public isInsurer {
+    function finish() public isInsurer reqState(States.BOUGHT) {
         if (instantiated_at + seconds_to_maturation > now) {
+            state = States.CLOSED;
             insurer.transfer(this.balance);
         }
     }
